@@ -24,6 +24,61 @@ import tempfile
 import os
 import random
 import threading
+import os
+import tempfile
+import random
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
+def create_driver():
+    # Создаем уникальный временный каталог для профиля
+    temp_dir = os.path.join(tempfile.gettempdir(), f"chrome_{random.randint(1000,9999)}")
+    os.makedirs(temp_dir, exist_ok=True)
+    
+    # Настройки Chrome
+    chrome_options = Options()
+    chrome_options.binary_location = "/usr/bin/google-chrome"  # Явный путь
+    chrome_options.add_argument(f"--user-data-dir={temp_dir}")  # Уникальный профиль
+    chrome_options.add_argument("--headless=new")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--remote-debugging-port=9222")  # Добавляем порт
+    
+    # Автоматическая установка ChromeDriver
+    service = Service(ChromeDriverManager().install())
+    
+    try:
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        return driver
+    except Exception as e:
+        print(f"Ошибка при создании драйвера: {e}")
+        # Пробуем без user-data-dir
+        chrome_options._arguments = [arg for arg in chrome_options._arguments 
+                                   if not arg.startswith("--user-data-dir")]
+        return webdriver.Chrome(service=service, options=chrome_options)
+
+def close_driver(driver):
+    try:
+        if driver:
+            temp_dir = driver.capabilities.get("chrome", {}).get("userDataDir", "")
+            driver.quit()
+            if temp_dir and os.path.exists(temp_dir):
+                import shutil
+                shutil.rmtree(temp_dir, ignore_errors=True)
+    except Exception as e:
+        print(f"Ошибка при закрытии драйвера: {e}")
+
+# Пример использования
+try:
+    driver = create_driver()
+    driver.get("https://rutube.ru")
+    print("Успех! Заголовок:", driver.title)
+except Exception as e:
+    print("Ошибка:", e)
+finally:
+    close_driver(driver)
 
 def worker():
     try:
