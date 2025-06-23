@@ -16,6 +16,83 @@ import pytz
 from multiprocessing import cpu_count
 import socket
 import subprocess
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+import tempfile
+import os
+import random
+import threading
+
+def worker():
+    try:
+        driver = create_driver()
+        driver.get("https://rutube.ru")
+        # Работа со страницей
+    finally:
+        close_driver(driver)
+
+# Запуск в нескольких потоках
+threads = []
+for _ in range(5):
+    t = threading.Thread(target=worker)
+    threads.append(t)
+    t.start()
+
+for t in threads:
+    t.join()
+
+def create_driver():
+    # Создаем уникальную временную папку для профиля
+    user_data_dir = os.path.join(tempfile.gettempdir(), f"chrome_profile_{random.randint(1000,9999)}")
+    os.makedirs(user_data_dir, exist_ok=True)
+    
+    # Настройки Chrome
+    chrome_options = Options()
+    chrome_options.binary_location = "/usr/bin/google-chrome"  # Явный путь
+    
+    # Обязательные параметры
+    chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
+    chrome_options.add_argument("--headless=new")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
+    
+    # Автоматическая установка ChromeDriver
+    service = Service(ChromeDriverManager().install())
+    
+    try:
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        return driver
+    except Exception as e:
+        print(f"Ошибка при создании драйвера: {e}")
+        raise
+
+def close_driver(driver):
+    try:
+        if driver:
+            driver.quit()
+            # Удаляем временный профиль
+            temp_dir = driver.capabilities.get("chrome", {}).get("userDataDir")
+            if temp_dir and os.path.exists(temp_dir):
+                import shutil
+                shutil.rmtree(temp_dir, ignore_errors=True)
+    except Exception as e:
+        print(f"Ошибка при закрытии драйвера: {e}")
+
+# Пример использования
+try:
+    driver = create_driver()
+    driver.get("https://rutube.ru")
+    print("Успешно загружена страница:", driver.title)
+    
+    # Ваш основной код здесь
+    
+except Exception as e:
+    print(f"Произошла ошибка: {e}")
+finally:
+    close_driver(driver)
 
 # ==================== КОНФИГУРАЦИЯ ====================
 CONFIG = {
