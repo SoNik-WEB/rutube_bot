@@ -19,8 +19,8 @@ import subprocess
 
 # ==================== КОНФИГУРАЦИЯ ====================
 CONFIG = {
-    "target_url": "https://rutube.ru/video/YOUR_VIDEO_ID/",
-    "total_views": 1_000_000,
+    "target_url": "https://rutube.ru/video/613bc8de37e47cd948d31c1033160303/",
+    "total_views": 235648,
     "max_threads": cpu_count() * 5,  # Динамически регулируется
     "proxy_timeout": 45,
     "min_view_duration": 0.7,  # Минимум 70% длительности видео
